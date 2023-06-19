@@ -56,7 +56,8 @@ public class ApiTestResource {
 
   @SecurityRequirement(name = "token_auth")
   @GetMapping("/hello")
-  public ResponseEntity<String> hello() {
+  public ResponseEntity<String> hello(Authentication authentication) {
+    Authentication authentication2 = SecurityContextHolder.getContext().getAuthentication();
     return ResponseEntity.ok("hello is exception");
   }
 
