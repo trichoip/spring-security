@@ -1,5 +1,6 @@
 package com.security.config;
 
+import com.security.security.jwt.JwtAccessDeniedHandler;
 import com.security.security.jwt.JwtAuthEntryPoint;
 import com.security.security.jwt.JwtFilter;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class SecurityConfig {
 
   private final JwtFilter jwtFilter;
   private final JwtAuthEntryPoint unauthorizedHandler;
+  private final JwtAccessDeniedHandler accessDeniedHandler;
   // private final CorsConfig corsConfig;
 
   private static final String[] AUTH_WHITELIST = {
@@ -49,6 +51,9 @@ public class SecurityConfig {
       .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
       .exceptionHandling()
       .authenticationEntryPoint(unauthorizedHandler)
+      .and()
+      .exceptionHandling()
+      .accessDeniedHandler(accessDeniedHandler)
       .and()
       .sessionManagement()
       .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
