@@ -4,16 +4,21 @@ import com.security.security.jwt.JwtAccessDeniedHandler;
 import com.security.security.jwt.JwtAuthEntryPoint;
 import com.security.security.jwt.JwtFilter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Collections;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
 @EnableWebSecurity
@@ -73,6 +78,71 @@ public class SecurityConfig {
       .and()
       .build();
   }
+
+
+  // @Bean
+  public SecurityFilterChain securityFilterChain2(HttpSecurity http) throws Exception {
+    return http
+            .cors(CustomCorsConfiguration::new)
+            .cors(cors ->
+                cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(Collections.singletonList("*"));
+                    config.setAllowedMethods(Collections.singletonList("*"));
+                    config.setAllowedHeaders(Collections.singletonList("*"));
+                    config.setAllowCredentials(true);
+                    config.addAllowedOriginPattern("*");
+                    return config;
+                })
+            )
+            .csrf(csrf -> csrf.disable())
+            .csrf(AbstractHttpConfigurer::disable)
+            // .addFilter(corsConfig.corsFilter())
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(handling -> handling.authenticationEntryPoint(unauthorizedHandler))
+            .exceptionHandling(handling -> handling.accessDeniedHandler(accessDeniedHandler))
+            .exceptionHandling(handling -> {
+              handling.authenticationEntryPoint(unauthorizedHandler);
+              handling.accessDeniedHandler(accessDeniedHandler);
+              // ================================================================
+              handling.authenticationEntryPoint(unauthorizedHandler).accessDeniedHandler(accessDeniedHandler);
+            }) 
+            .exceptionHandling(handling -> handling.authenticationEntryPoint(unauthorizedHandler).accessDeniedHandler(accessDeniedHandler))
+            .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // .authenticationProvider(authenticationProvider())
+            .authorizeHttpRequests(auth -> {
+              auth.requestMatchers(AUTH_WHITELIST).permitAll();
+              auth.requestMatchers("/api/hello", "/api/authenticate", "/api/refresh").permitAll();
+              auth.requestMatchers("/api/test").hasAuthority("ADMIN");
+              auth.anyRequest().authenticated();
+
+               // ================================================================
+
+              auth.requestMatchers(AUTH_WHITELIST)
+                  .permitAll()
+                  .requestMatchers("/api/hello", "/api/authenticate", "/api/refresh")
+                  .permitAll()
+                  .requestMatchers("/api/test")
+                  .hasAuthority("ADMIN")
+                  .anyRequest()
+                  .authenticated();
+
+            })  
+            .authorizeHttpRequests(auth ->
+              auth.requestMatchers(AUTH_WHITELIST)
+                  .permitAll()
+                  .requestMatchers("/api/hello", "/api/authenticate", "/api/refresh")
+                  .permitAll()
+                  .requestMatchers("/api/test")
+                  .hasAuthority("ADMIN")
+                  .anyRequest()
+                  .authenticated()
+            )
+            // .and()
+            // .formLogin()
+            .build();
+  }
+  
   // ban dau chua jwt , chua co login db
   // @Bean
   // public UserDetailsService userDetailsService(PasswordEncoder encoder) {
@@ -95,7 +165,7 @@ public class SecurityConfig {
   //   return daoAuthenticationProvider;
   // }
 
-  // neu dung AuthenticationManager thi bat len
+  // neu dung AuthenticationManager thi bat len (cach 2 trong api /authenticate)
   // @Bean
   // public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
   //   return authenticationConfiguration.getAuthenticationManager();
